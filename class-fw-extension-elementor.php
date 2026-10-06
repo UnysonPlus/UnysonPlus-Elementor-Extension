@@ -20,6 +20,7 @@ class FW_Extension_Elementor extends FW_Extension {
 		require_once $this->get_path( '/lib/class-fw-elementor-option-bridge.php' );
 
 		add_action( 'elementor/elements/categories_registered', array( $this, '_action_register_category' ) );
+		add_action( 'elementor/elements/categories_registered', array( $this, '_action_order_categories' ), 999 );
 		add_action( 'elementor/widgets/register', array( $this, '_action_register_widgets' ) );
 		add_action( 'elementor/frontend/after_register_scripts', array( $this, '_action_register_scripts' ) );
 		add_action( 'elementor/preview/enqueue_styles', array( $this, '_action_preview_assets' ) );
@@ -35,7 +36,8 @@ class FW_Extension_Elementor extends FW_Extension {
 	/**
 	 * The locked tiles that do not come from `pro_widgets`: Elementor 4's Atomic Form category
 	 * (built inside its elements manager, every item a Pro promotion, no hook to remove it),
-	 * any other locked tile, and the "Access all Pro widgets" banner under them. Hidden in the
+	 * any other locked tile, and the "Access all Pro widgets" banners (under the widget list and
+	 * under a widget's settings). Hidden in the
 	 * panel only — nothing is unregistered.
 	 *
 	 * @internal
@@ -47,7 +49,7 @@ class FW_Extension_Elementor extends FW_Extension {
 
 		wp_register_style( 'fw-elementor-hide-promos', false, array(), $this->manifest->get_version() );
 		wp_enqueue_style( 'fw-elementor-hide-promos' );
-		wp_add_inline_style( 'fw-elementor-hide-promos', '#elementor-panel .elementor-element--promotion, #elementor-panel-category-atomic-form, #elementor-panel-get-pro-elements-sticky { display: none !important; }' );
+		wp_add_inline_style( 'fw-elementor-hide-promos', '#elementor-panel .elementor-element--promotion, #elementor-panel-category-atomic-form, #elementor-panel-get-pro-elements-sticky, #elementor-panel .elementor-panel-editor-sticky-promotion { display: none !important; }' );
 	}
 
 	/**
@@ -240,6 +242,42 @@ class FW_Extension_Elementor extends FW_Extension {
 				'icon'  => 'eicon-cart',
 			) );
 		}
+	}
+
+	/**
+	 * Put the Unyson+ categories at the top of the widget panel (after Favorites).
+	 *
+	 * Elementor appends categories in registration order and has no API or filter to
+	 * place one — `add_category()` only appends, and the document-config filter merges with
+	 * array_replace_recursive(), which keeps the original key order. So the list is
+	 * reordered in place, late on `categories_registered`, through reflection on the
+	 * manager's `categories` property. Anything unexpected (a renamed property, a
+	 * non-array) leaves Elementor's order untouched.
+	 *
+	 * @internal
+	 */
+	public function _action_order_categories( $elements_manager ) {
+		try {
+			$property = new ReflectionProperty( $elements_manager, 'categories' );
+			$property->setAccessible( true );
+			$categories = $property->getValue( $elements_manager );
+		} catch ( Exception $e ) {
+			return;
+		}
+
+		if ( ! is_array( $categories ) || ! isset( $categories['unysonplus'] ) ) {
+			return;
+		}
+
+		$first = array();
+		foreach ( array( 'favorites', 'unysonplus', 'unysonplus-shop' ) as $key ) {
+			if ( isset( $categories[ $key ] ) ) {
+				$first[ $key ] = $categories[ $key ];
+				unset( $categories[ $key ] );
+			}
+		}
+
+		$property->setValue( $elements_manager, $first + $categories );
 	}
 
 	/** @internal */

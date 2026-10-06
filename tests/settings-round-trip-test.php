@@ -220,6 +220,19 @@ if ( is_array( $sides['shortcode'] ) && is_array( $sides['widget'] ) ) {
 	foreach ( $nodes as $n => $node ) {
 		$a = isset( $sides['shortcode'][ $n ] ) ? $sides['shortcode'][ $n ] : null;
 		$b = isset( $sides['widget'][ $n ] ) ? $sides['widget'][ $n ] : null;
+		// Outside a page (no <head> pass) the widget prints its page CSS — the element's own
+		// Custom CSS and off-scale spacing rules — in a <style> ahead of the markup. The page
+		// builder writes the same rules to the page stylesheet, so compare the markup without it.
+		$style = '';
+		if ( is_string( $b ) && preg_match( '#^\s*<style>(.*?)</style>#s', $b, $sm ) ) {
+			$style = $sm[1];
+			$b     = substr( trim( $b ), strlen( trim( $sm[0] ) ) );
+		}
+		$want = FW_Elementor_Shortcode_Widget::page_css( array( $node[2] ) );
+		if ( '' !== $want || '' !== $style ) {
+			$check( 'page CSS     ' . $node[0], '' !== $style && ( false === strpos( $want, '.u' ) || preg_match( '/\.u[0-9a-z]+/', $style ) ), 'want: ' . substr( $want, 0, 120 ) . "
+        got:  " . substr( $style, 0, 120 ) );
+		}
 		$detail = '';
 		if ( is_string( $a ) && is_string( $b ) && trim( $a ) !== trim( $b ) ) {
 			$a = trim( $a );

@@ -424,16 +424,23 @@ class FW_Extension_Elementor extends FW_Extension {
 			return;
 		}
 
-		$widgets = $this->get_widgets();
+		$widgets   = $this->get_widgets();
+		$atts_list = array();
 
-		$walk = function ( $elements ) use ( &$walk, $widgets ) {
+		$walk = function ( $elements ) use ( &$walk, $widgets, &$atts_list ) {
 			foreach ( $elements as $element ) {
 				if ( ! is_array( $element ) ) {
 					continue;
 				}
 
 				if ( isset( $element['widgetType'], $widgets[ $element['widgetType'] ] ) ) {
-					$widgets[ $element['widgetType'] ]->enqueue_for_settings( isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array() );
+					$id   = isset( $element['id'] ) ? (string) $element['id'] : '';
+					$atts = $widgets[ $element['widgetType'] ]->enqueue_for_settings( isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array(), $id );
+
+					if ( $atts && '' !== $id ) {
+						$atts_list[]                  = $atts;
+						$this->page_css_covered[ $id ] = true;
+					}
 				}
 
 				if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
@@ -443,5 +450,21 @@ class FW_Extension_Elementor extends FW_Extension {
 		};
 
 		$walk( $elements );
+
+		$css = FW_Elementor_Shortcode_Widget::page_css( $atts_list );
+
+		if ( '' !== $css ) {
+			wp_register_style( 'up-elementor-page', false, array(), $this->manifest->get_version() );
+			wp_enqueue_style( 'up-elementor-page' );
+			wp_add_inline_style( 'up-elementor-page', $css );
+		}
+	}
+
+	/** Widget ids whose page CSS the <head> pass printed. */
+	private $page_css_covered = array();
+
+	/** True when the <head> pass already printed this widget's page CSS. */
+	public function page_css_covers( $element_id ) {
+		return isset( $this->page_css_covered[ (string) $element_id ] );
 	}
 }

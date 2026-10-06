@@ -199,7 +199,7 @@ abstract class FW_Elementor_Shortcode_Widget extends \Elementor\Widget_Base {
 	 * $settings must already have the control defaults merged in (get_settings_for_display()
 	 * does; see with_control_defaults() for raw saved data).
 	 */
-	public function build_atts( array $settings ) {
+	public function build_atts( array $settings, $element_id = null ) {
 		$shortcode = $this->get_shortcode();
 		$atts      = FW_Elementor_Option_Bridge::to_atts( $settings, $this->leaves(), $this->exposed_ids() );
 		$residue   = isset( $settings[ FW_Elementor_Option_Bridge::EXTRA ] ) ? FW_Elementor_Option_Bridge::decode_residue( $settings[ FW_Elementor_Option_Bridge::EXTRA ] ) : null;
@@ -218,8 +218,10 @@ abstract class FW_Elementor_Shortcode_Widget extends \Elementor\Widget_Base {
 		// A stable id per widget, so the scoped class the shortcode derives from it does
 		// not change on every render. One carried in from page-builder atts wins: custom
 		// CSS written against it must keep matching.
-		if ( $this->get_id() ) {
-			$defaults['unique_id'] = 'el' . $this->get_id();
+		$element_id = null !== $element_id ? (string) $element_id : (string) $this->get_id();
+
+		if ( '' !== $element_id ) {
+			$defaults['unique_id'] = 'el' . $element_id;
 		}
 
 		return array_merge( $defaults, $atts );
@@ -240,22 +242,52 @@ abstract class FW_Elementor_Shortcode_Widget extends \Elementor\Widget_Base {
 	 * stylesheet of the design it uses. Called from the document-level pass in <head>, so
 	 * the styles print before the markup rather than after it.
 	 */
-	public function enqueue_for_settings( array $settings ) {
+	public function enqueue_for_settings( array $settings, $element_id = '' ) {
 		$shortcode = $this->get_shortcode();
 
 		if ( ! $shortcode ) {
-			return;
+			return array();
 		}
 
 		$shortcode->_enqueue_static();
 
-		$atts = $this->build_atts( $this->with_control_defaults( $settings ) );
+		$atts = $this->build_atts( $this->with_control_defaults( $settings ), $element_id );
 
 		$this->enqueue_instance_static( $atts );
 
 		if ( function_exists( 'fw_sc_design_resolve' ) ) {
 			$this->enqueue_design( fw_sc_design_resolve( $this->shortcode_tag(), $atts, 'default' ) );
 		}
+
+		return $atts;
+	}
+
+	/**
+	 * The page CSS the page builder writes for a set of elements, for these atts: each
+	 * element's own Custom CSS (scoped to its unique class) and a rule per off-scale
+	 * spacing class (`p-[26px]`). The page builder builds both from its saved JSON, which
+	 * an Elementor page does not have, so without this the classes render with no rules.
+	 */
+	public static function page_css( array $atts_list ) {
+		if ( ! $atts_list ) {
+			return '';
+		}
+
+		$parts = array();
+
+		if ( function_exists( 'unysonplus_collect_element_css' ) ) {
+			$nodes = array();
+			foreach ( $atts_list as $atts ) {
+				$nodes[] = array( 'atts' => $atts );
+			}
+			unysonplus_collect_element_css( $nodes, $parts );
+		}
+
+		if ( function_exists( 'unysonplus_build_arbitrary_spacing_css' ) ) {
+			$parts[] = unysonplus_build_arbitrary_spacing_css( $atts_list );
+		}
+
+		return trim( implode( '', $parts ) );
 	}
 
 	/**
@@ -371,6 +403,16 @@ abstract class FW_Elementor_Shortcode_Widget extends \Elementor\Widget_Base {
 		// handle, so it is free when the head pass already ran.
 		$shortcode->_enqueue_static();
 		$this->enqueue_instance_static( $atts );
+
+		// The <head> pass already printed this element's CSS; anything it could not see
+		// (the editor, a template, a popup) carries its own.
+		$ext = fw_ext( 'elementor' );
+		if ( ! $ext || ! $ext->page_css_covers( $this->get_id() ) ) {
+			$css = self::page_css( array( $atts ) );
+			if ( '' !== $css ) {
+				echo '<style>' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput -- built by the page builder's own scrubbed CSS helpers
+			}
+		}
 
 		echo $shortcode->render( $atts ); // phpcs:ignore WordPress.Security.EscapeOutput -- the shortcode view escapes its own output
 	}

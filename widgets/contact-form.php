@@ -71,13 +71,14 @@ class FW_Elementor_Widget_Contact_Form extends FW_Elementor_Shortcode_Widget {
 	 * time, which would add a row per page view and break a submission arriving after a
 	 * re-render. An id carried in from page-builder atts (in the residue) is kept.
 	 */
-	public function build_atts( array $settings ) {
-		$atts = parent::build_atts( $settings );
+	public function build_atts( array $settings, $element_id = null ) {
+		$atts       = parent::build_atts( $settings, $element_id );
+		$element_id = null !== $element_id ? (string) $element_id : (string) $this->get_id();
 
 		$residue = isset( $settings[ FW_Elementor_Option_Bridge::EXTRA ] ) ? FW_Elementor_Option_Bridge::decode_residue( $settings[ FW_Elementor_Option_Bridge::EXTRA ] ) : null;
 
-		if ( empty( $residue['id'] ) && $this->get_id() ) {
-			$atts['id'] = 'el' . $this->get_id();
+		if ( empty( $residue['id'] ) && '' !== $element_id ) {
+			$atts['id'] = 'el' . $element_id;
 		}
 
 		return $atts;

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Upsells extends FW_Elementor_Shortcode_Widget {
 		return __( 'Upsells', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-product-upsell';
 	}
 

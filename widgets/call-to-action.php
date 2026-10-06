@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Call_To_Action extends FW_Elementor_Shortcode_Widget {
 		return __( 'Call to Action', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-image-rollover';
 	}
 

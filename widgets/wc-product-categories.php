@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Product_Categories extends FW_Elementor_Shortcode_W
 		return __( 'Product Categories', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-product-categories';
 	}
 

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Toc extends FW_Elementor_Shortcode_Widget {
 		return __( 'Table of Contents', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-table-of-contents';
 	}
 

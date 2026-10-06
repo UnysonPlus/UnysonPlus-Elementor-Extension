@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Logo_Grid extends FW_Elementor_Shortcode_Widget {
 		return __( 'Logo Grid', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-logo';
 	}
 

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Flip_Box extends FW_Elementor_Shortcode_Widget {
 		return __( 'Flip Box', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-flip-box';
 	}
 

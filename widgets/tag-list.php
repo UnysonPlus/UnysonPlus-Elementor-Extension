@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Tag_List extends FW_Elementor_Shortcode_Widget {
 		return __( 'Tag List', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-tags';
 	}
 

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Add_To_Cart extends FW_Elementor_Shortcode_Widget {
 		return __( 'Add to Cart', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-product-add-to-cart';
 	}
 

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Order_Tracking extends FW_Elementor_Shortcode_Widge
 		return __( 'Order Tracking', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-search-results';
 	}
 

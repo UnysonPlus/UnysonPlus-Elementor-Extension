@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Compare extends FW_Elementor_Shortcode_Widget {
 		return __( 'Compare', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-table';
 	}
 

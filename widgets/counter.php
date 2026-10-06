@@ -19,7 +19,7 @@ class FW_Elementor_Widget_Counter extends FW_Elementor_Shortcode_Widget {
 		return __( 'Counter', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-counter';
 	}
 

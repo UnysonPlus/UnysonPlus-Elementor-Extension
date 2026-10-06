@@ -17,7 +17,7 @@ class FW_Elementor_Widget_Newsletter extends FW_Elementor_Shortcode_Widget {
 		return __( 'Newsletter', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-mail';
 	}
 

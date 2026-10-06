@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Before_After extends FW_Elementor_Shortcode_Widget {
 		return __( 'Before / After', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-image-before-after';
 	}
 

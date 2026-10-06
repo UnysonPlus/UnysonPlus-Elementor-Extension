@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Free_Shipping extends FW_Elementor_Shortcode_Widget
 		return __( 'Free Shipping Bar', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-progress-tracker';
 	}
 

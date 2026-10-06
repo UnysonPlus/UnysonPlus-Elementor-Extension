@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Social_Share extends FW_Elementor_Shortcode_Widget {
 		return __( 'Share Buttons', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-share';
 	}
 

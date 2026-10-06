@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Wc_Cart_Link extends FW_Elementor_Shortcode_Widget {
 		return __( 'Cart Link', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-cart-medium';
 	}
 

@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Animated_Heading extends FW_Elementor_Shortcode_Widget
 		return __( 'Animated Headline', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-animated-headline';
 	}
 

@@ -26,6 +26,7 @@ class FW_Extension_Elementor extends FW_Extension {
 		add_action( 'elementor/preview/enqueue_styles', array( $this, '_action_preview_assets' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, '_action_document_assets' ), 20 );
 		add_filter( 'fw_is_editor_context', array( $this, '_filter_editor_context' ) );
+		add_action( 'elementor/editor/after_enqueue_styles', array( $this, '_action_editor_icons' ) );
 
 		if ( defined( 'ELEMENTOR_VERSION' ) && ! defined( 'ELEMENTOR_PRO_VERSION' ) ) {
 			add_filter( 'transient_elementor_remote_info_api_data_' . ELEMENTOR_VERSION, array( $this, '_filter_hide_pro_promos' ) );
@@ -75,6 +76,30 @@ class FW_Extension_Elementor extends FW_Extension {
 		$data['pro_widgets'] = array();
 
 		return $data;
+	}
+
+	/**
+	 * The widgets' panel icons: each element's own 16×16 pixel glyph, drawn as a CSS mask so it
+	 * takes the panel's text colour (and its hover / dark-mode colour) like Elementor's own icon
+	 * font does. Editor only.
+	 *
+	 * @internal
+	 */
+	public function _action_editor_icons() {
+		$css = '.up-icon{display:inline-block;width:1em;height:1em;background-color:currentColor;'
+			. '-webkit-mask:var(--up-icon) center/contain no-repeat;mask:var(--up-icon) center/contain no-repeat;}'
+			. '.up-icon::before{content:none;}';
+
+		foreach ( $this->get_widgets() as $name => $widget ) {
+			$uri = $widget->icon_uri();
+			if ( '' !== $uri ) {
+				$css .= '.up-icon--' . sanitize_html_class( $name ) . '{--up-icon:url("' . esc_url_raw( $uri ) . '");}';
+			}
+		}
+
+		wp_register_style( 'fw-elementor-icons', false, array(), $this->manifest->get_version() );
+		wp_enqueue_style( 'fw-elementor-icons' );
+		wp_add_inline_style( 'fw-elementor-icons', $css );
 	}
 
 	/**
@@ -153,6 +178,17 @@ class FW_Extension_Elementor extends FW_Extension {
 			'wc_my_account'         => array( 'file' => 'wc-my-account.php', 'class' => 'FW_Elementor_Widget_Wc_My_Account' ),
 			'wc_order_tracking'     => array( 'file' => 'wc-order-tracking.php', 'class' => 'FW_Elementor_Widget_Wc_Order_Tracking' ),
 			'wc_free_shipping'      => array( 'file' => 'wc-free-shipping.php', 'class' => 'FW_Elementor_Widget_Wc_Free_Shipping' ),
+			'gallery_3d'                => array( 'file' => 'gallery-3d.php', 'class' => 'FW_Elementor_Widget_Gallery_3d' ),
+			'image_scroll_choreography' => array( 'file' => 'image-scroll-choreography.php', 'class' => 'FW_Elementor_Widget_Image_Scroll_Choreography' ),
+			'text_scroll_choreography'  => array( 'file' => 'text-scroll-choreography.php', 'class' => 'FW_Elementor_Widget_Text_Scroll_Choreography' ),
+			'image_sequence'            => array( 'file' => 'image-sequence.php', 'class' => 'FW_Elementor_Widget_Image_Sequence' ),
+			'interactive_reveal'        => array( 'file' => 'interactive-reveal.php', 'class' => 'FW_Elementor_Widget_Interactive_Reveal' ),
+			'model_viewer'              => array( 'file' => 'model-viewer.php', 'class' => 'FW_Elementor_Widget_Model_Viewer' ),
+			'parallax_scene'            => array( 'file' => 'parallax-scene.php', 'class' => 'FW_Elementor_Widget_Parallax_Scene' ),
+			'rive'                      => array( 'file' => 'rive.php', 'class' => 'FW_Elementor_Widget_Rive' ),
+			'svg_draw'                  => array( 'file' => 'svg-draw.php', 'class' => 'FW_Elementor_Widget_Svg_Draw' ),
+			'svg_morph'                 => array( 'file' => 'svg-morph.php', 'class' => 'FW_Elementor_Widget_Svg_Morph' ),
+			'webgl_object'              => array( 'file' => 'webgl-object.php', 'class' => 'FW_Elementor_Widget_Webgl_Object' ),
 		) );
 	}
 
@@ -242,6 +278,14 @@ class FW_Extension_Elementor extends FW_Extension {
 				'icon'  => 'eicon-cart',
 			) );
 		}
+
+		// The Animation Engine's elements, when that extension is active.
+		if ( fw_ext( 'animation-engine' ) ) {
+			$elements_manager->add_category( 'unysonplus-motion', array(
+				'title' => __( 'Unyson+ Motion', 'fw' ),
+				'icon'  => 'eicon-animation',
+			) );
+		}
 	}
 
 	/**
@@ -270,7 +314,7 @@ class FW_Extension_Elementor extends FW_Extension {
 		}
 
 		$first = array();
-		foreach ( array( 'favorites', 'unysonplus', 'unysonplus-shop' ) as $key ) {
+		foreach ( array( 'favorites', 'unysonplus', 'unysonplus-shop', 'unysonplus-motion' ) as $key ) {
 			if ( isset( $categories[ $key ] ) ) {
 				$first[ $key ] = $categories[ $key ];
 				unset( $categories[ $key ] );

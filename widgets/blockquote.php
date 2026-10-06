@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Blockquote extends FW_Elementor_Shortcode_Widget {
 		return __( 'Blockquote', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-blockquote';
 	}
 

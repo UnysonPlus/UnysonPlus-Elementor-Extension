@@ -11,7 +11,7 @@ $manifest['description'] = __(
 	'fw'
 );
 
-$manifest['version']     = '1.0.5';
+$manifest['version']     = '1.0.7';
 $manifest['display']     = true;
 $manifest['standalone']  = true;
 
@@ -43,6 +43,14 @@ $manifest['requirements'] = array(
 /**
  * Changelog
  * -----------------------------------------------------------------------------
+ * 1.0.6 - Animation Engine widgets, in an "Unyson+ Motion" panel category (only
+ *         when the Animation Engine extension is active): WebGL Object, SVG Draw,
+ *         SVG Morph, Motion Gallery, Parallax Scene, Image and Text Scroll
+ *         Choreography, Interactive Reveal, Image Sequence, 3D Model and Rive —
+ *         64 widgets in all. Their scripts re-run on every editor re-render
+ *         (Animation Engine re-init hooks), and the layer-based ones start with
+ *         placeholder layers so a new widget shows what it does.
+ *
  * 1.0.4 - WooCommerce widgets, in their own "Unyson+ Shop" panel category (only
  *         when the WooCommerce extension is active): Products, Product Card,
  *         Product Categories, Add to Cart, Menu Cart, Cart Link, Account Link,

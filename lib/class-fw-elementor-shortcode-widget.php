@@ -69,6 +69,29 @@ abstract class FW_Elementor_Shortcode_Widget extends \Elementor\Widget_Base {
 		);
 	}
 
+	/**
+	 * The panel icon: the element's own pixel glyph (its static/img/page_builder.svg, the
+	 * same one the page builder shows) drawn as a mask in the panel's text colour — see the
+	 * editor stylesheet in FW_Extension_Elementor::_action_editor_icons(). An element
+	 * without one keeps its Elementor icon.
+	 */
+	public function get_icon() {
+		return '' !== $this->icon_uri() ? 'up-icon up-icon--' . $this->get_name() : $this->fallback_icon();
+	}
+
+	/** An Elementor icon class, for an element that ships no glyph of its own. */
+	protected function fallback_icon() {
+		return 'eicon-apps';
+	}
+
+	/** URL of the element's page_builder.svg, or ''. */
+	public function icon_uri() {
+		$shortcode = $this->get_shortcode();
+		$uri       = $shortcode ? $shortcode->locate_URI( '/static/img/page_builder.svg' ) : false;
+
+		return is_string( $uri ) ? $uri : '';
+	}
+
 	public function get_name() {
 		return 'up-' . str_replace( '_', '-', $this->shortcode_tag() );
 	}

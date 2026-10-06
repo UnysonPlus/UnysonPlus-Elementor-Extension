@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Countdown extends FW_Elementor_Shortcode_Widget {
 		return __( 'Countdown', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-countdown';
 	}
 

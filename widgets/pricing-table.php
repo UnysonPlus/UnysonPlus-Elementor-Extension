@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Pricing_Table extends FW_Elementor_Shortcode_Widget {
 		return __( 'Pricing Table', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-price-table';
 	}
 

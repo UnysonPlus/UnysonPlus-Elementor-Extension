@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Star_Rating extends FW_Elementor_Shortcode_Widget {
 		return __( 'Star Rating', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-rating';
 	}
 

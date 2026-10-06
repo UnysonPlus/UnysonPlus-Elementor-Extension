@@ -13,7 +13,7 @@ class FW_Elementor_Widget_Image_Hotspots extends FW_Elementor_Shortcode_Widget {
 		return __( 'Hotspot', 'fw' );
 	}
 
-	public function get_icon() {
+	protected function fallback_icon() {
 		return 'eicon-image-hotspot';
 	}
 

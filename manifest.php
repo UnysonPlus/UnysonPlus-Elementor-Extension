@@ -4,14 +4,14 @@
 
 $manifest = [];
 
-$manifest['name']        = __( 'Elementor Widgets', 'fw' );
+$manifest['name']        = __( 'Elementor', 'fw' );
 $manifest['slug']        = 'unysonplus-elementor';
 $manifest['description'] = __(
-	'Exposes Unyson+ elements as native Elementor widgets, edited in Elementor\'s own side panel. Widgets are rendered by the same code as the page builder, so the front-end output is identical.',
+	'Elementor integration for Unyson+. Puts Unyson+ elements into Elementor as native widgets, edited in Elementor\'s own side panel and rendered by the same code as the page builder, so the front-end output is identical.',
 	'fw'
 );
 
-$manifest['version']     = '1.0.8';
+$manifest['version']     = '1.0.10';
 $manifest['display']     = true;
 $manifest['standalone']  = true;
 
@@ -43,6 +43,17 @@ $manifest['requirements'] = array(
 /**
  * Changelog
  * -----------------------------------------------------------------------------
+ * 1.0.10 - Design Sync, formerly the separate Builder Sync extension, now part
+ *          of this one: keeps Theme Settings and Elementor's Site Settings in
+ *          step (colour presets, fonts, H1-H6, links, container width,
+ *          background, the primary button, Text Styles), set under Design
+ *          Sync > Sync with Theme Settings (two-way, one-way or off). A site
+ *          that had Builder Sync active keeps its direction: the setting is
+ *          carried over and Builder Sync is deactivated on the next admin
+ *          page load. Class names, the fw_builder_sync_providers filter and
+ *          the colour identity map are unchanged; the public calls are now
+ *          fw_ext('elementor')->sync_push() and sync_pull().
+ *
  * 1.0.6 - Animation Engine widgets, in an "Unyson+ Motion" panel category (only
  *         when the Animation Engine extension is active): WebGL Object, SVG Draw,
  *         SVG Morph, Motion Gallery, Parallax Scene, Image and Text Scroll

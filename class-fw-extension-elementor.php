@@ -28,6 +28,11 @@ class FW_Extension_Elementor extends FW_Extension {
 		add_filter( 'fw_is_editor_context', array( $this, '_filter_editor_context' ) );
 		add_action( 'elementor/editor/after_enqueue_styles', array( $this, '_action_editor_icons' ) );
 
+		// Design sync: Theme Settings <-> the Elementor Site Kit (formerly the Builder Sync extension).
+		add_action( 'fw_settings_form_saved', array( $this, '_on_theme_settings_saved' ), 20 );
+		add_action( 'init', array( $this, '_sync_listen' ), 20 );
+		add_action( 'admin_init', array( $this, '_migrate_builder_sync' ) );
+
 		if ( defined( 'ELEMENTOR_VERSION' ) && ! defined( 'ELEMENTOR_PRO_VERSION' ) ) {
 			add_filter( 'transient_elementor_remote_info_api_data_' . ELEMENTOR_VERSION, array( $this, '_filter_hide_pro_promos' ) );
 			add_action( 'elementor/editor/after_enqueue_styles', array( $this, '_action_hide_pro_promo_tiles' ) );
@@ -466,5 +471,177 @@ class FW_Extension_Elementor extends FW_Extension {
 	/** True when the <head> pass already printed this widget's page CSS. */
 	public function page_css_covers( $element_id ) {
 		return isset( $this->page_css_covered[ (string) $element_id ] );
+	}
+
+	/* ------------------------------------------------------------------ *
+	 * Design sync — Theme Settings <-> the Elementor Site Kit
+	 *
+	 *   Theme Settings saved   -> every available provider's push( design )
+	 *   builder settings saved -> that provider's pull() -> FW_Builder_Sync_Design::write()
+	 *
+	 * A builder-neutral design model (FW_Builder_Sync_Design) with one provider per builder
+	 * (`fw_builder_sync_providers`); Elementor is the one shipped. One static flag stops the
+	 * echo: a push writes the builder directly (no builder save event), a pull writes Theme
+	 * Settings directly (no settings-form event), and either one in flight blocks the other.
+	 * ------------------------------------------------------------------ */
+
+	/** @var FW_Builder_Sync_Provider[]|null */
+	private $sync_providers = null;
+
+	/** @var bool a sync is writing — ignore the events it causes */
+	private static $sync_busy = false;
+
+	/** Load the sync classes. Public so the Site Converter can use them in the request that activates us. */
+	public static function load_sync() {
+		// The same classes ship in the retired Builder Sync extension; a site that still has it
+		// active has already declared them, and declaring them twice is fatal.
+		$dir = dirname( __FILE__ ) . '/lib/sync';
+		foreach ( array( 'FW_Builder_Sync_Design' => 'design', 'FW_Builder_Sync_Provider' => 'provider', 'FW_Builder_Sync_Elementor' => 'elementor' ) as $class => $file ) {
+			if ( ! class_exists( $class, false ) ) {
+				require_once $dir . '/class-fw-builder-sync-' . $file . '.php';
+			}
+		}
+	}
+
+	/**
+	 * Every registered provider, available or not.
+	 *
+	 * @return FW_Builder_Sync_Provider[]
+	 */
+	public function get_sync_providers() {
+		if ( null === $this->sync_providers ) {
+			self::load_sync();
+			$p = apply_filters( 'fw_builder_sync_providers', array( 'elementor' => new FW_Builder_Sync_Elementor() ) );
+			$this->sync_providers = array();
+			foreach ( (array) $p as $prov ) {
+				if ( $prov instanceof FW_Builder_Sync_Provider ) {
+					$this->sync_providers[ $prov->slug() ] = $prov;
+				}
+			}
+		}
+		return $this->sync_providers;
+	}
+
+	/** 'both' | 'to_builder' | 'off' */
+	public function sync_mode() {
+		$m = fw_get_db_ext_settings_option( $this->get_name(), 'sync_mode', 'both' );
+		return in_array( $m, array( 'both', 'to_builder', 'off' ), true ) ? $m : 'both';
+	}
+
+	/**
+	 * Push the current Theme Settings design to one provider (or all available ones).
+	 * Public so other code — the Site Converter after an import — can sync on demand.
+	 *
+	 * @param string $only a provider slug, or '' for every available provider
+	 * @return array provider slug => changed builder keys
+	 */
+	public function sync_push( $only = '' ) {
+		if ( self::$sync_busy || 'off' === $this->sync_mode() || $this->legacy_sync_active() ) {
+			return array();
+		}
+		self::load_sync();
+		self::$sync_busy = true;
+		$out             = array();
+		try {
+			$design = FW_Builder_Sync_Design::read();
+			foreach ( $this->get_sync_providers() as $slug => $prov ) {
+				if ( ( '' !== $only && $only !== $slug ) || ! $prov->is_available() ) {
+					continue;
+				}
+				$out[ $slug ] = $prov->push( $design );
+			}
+		} finally {
+			self::$sync_busy = false;
+		}
+		return $out;
+	}
+
+	/**
+	 * Pull one provider's builder design into Theme Settings.
+	 *
+	 * @return string[] the Theme Settings keys that changed
+	 */
+	public function sync_pull( $slug ) {
+		if ( self::$sync_busy || 'both' !== $this->sync_mode() || $this->legacy_sync_active() ) {
+			return array();
+		}
+		$all  = $this->get_sync_providers();
+		$prov = isset( $all[ $slug ] ) ? $all[ $slug ] : null;
+		if ( ! $prov || ! $prov->is_available() ) {
+			return array();
+		}
+		self::$sync_busy = true;
+		try {
+			$res = $prov->pull();
+			return FW_Builder_Sync_Design::write( (array) ( $res['design'] ?? array() ), (array) ( $res['renames'] ?? array() ) );
+		} finally {
+			self::$sync_busy = false;
+		}
+	}
+
+	/**
+	 * The retired Builder Sync extension, while still active (until the migration below runs),
+	 * owns the sync: two syncs reacting to the same save would race each other.
+	 */
+	private function legacy_sync_active() {
+		return (bool) fw_ext( 'builder-sync' );
+	}
+
+	/**
+	 * @internal
+	 */
+	public function _on_theme_settings_saved() {
+		$this->sync_push();
+	}
+
+	/**
+	 * Providers hook their builder once every plugin has loaded (the builder may load after us).
+	 *
+	 * @internal
+	 */
+	public function _sync_listen() {
+		if ( 'both' !== $this->sync_mode() || $this->legacy_sync_active() ) {
+			return;
+		}
+		foreach ( $this->get_sync_providers() as $slug => $prov ) {
+			if ( ! $prov->is_available() ) {
+				continue;
+			}
+			$prov->listen( function () use ( $slug ) {
+				$this->sync_pull( $slug );
+			} );
+		}
+	}
+
+	/**
+	 * One-time: the Builder Sync extension became this extension's design sync. Carry its
+	 * Direction setting over and deactivate it, so the sync keeps running as it did. The
+	 * colour identity map (`fw_builder_sync_ids_*`) is shared and needs no move. Reads the
+	 * raw options because the old extension may no longer be installed.
+	 *
+	 * @internal
+	 */
+	public function _migrate_builder_sync() {
+		if ( get_option( 'fw_elementor_sync_migrated' ) ) {
+			return;
+		}
+
+		$old = get_option( 'fw_ext_settings_options:builder-sync', null );
+		if ( is_array( $old ) && isset( $old['mode'] ) ) {
+			$new = get_option( 'fw_ext_settings_options:' . $this->get_name(), array() );
+			$new = is_array( $new ) ? $new : array();
+			if ( ! isset( $new['sync_mode'] ) ) {
+				$new['sync_mode'] = $old['mode'];
+				update_option( 'fw_ext_settings_options:' . $this->get_name(), $new, false );
+			}
+		}
+
+		$active = get_option( 'fw_active_extensions', array() );
+		if ( is_array( $active ) && isset( $active['builder-sync'] ) ) {
+			unset( $active['builder-sync'] );
+			update_option( 'fw_active_extensions', $active );
+		}
+
+		update_option( 'fw_elementor_sync_migrated', 1, false );
 	}
 }

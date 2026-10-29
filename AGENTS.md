@@ -1,4 +1,4 @@
-# Elementor Widgets extension — agent notes
+# Elementor extension — agent notes
 
 Unyson+ elements as native Elementor widgets (`up-<tag>`), edited in Elementor's side panel and
 rendered by the shortcode's own view. The full reference — widget list, the option → control map,

@@ -174,7 +174,18 @@ foreach ( $nodes as $node ) {
 	// build_atts() lays the shortcode defaults underneath; compare only what the node set,
 	// and check separately that nothing it set was replaced.
 	$back = array_intersect_key( $back, $atts );
-	$same = up_rt_ksort( $back ) === up_rt_ksort( $atts );
+	// A form's fields travel as a JSON string the form codec re-encodes: the same fields can come
+	// back with keys in another order or `/` unescaped. Compare what the string says, not its bytes.
+	$norm = function ( $a ) {
+		if ( isset( $a['form']['json'] ) && is_string( $a['form']['json'] ) ) {
+			$d = json_decode( $a['form']['json'], true );
+			if ( is_array( $d ) ) {
+				$a['form']['json'] = up_rt_ksort( $d );
+			}
+		}
+		return up_rt_ksort( $a );
+	};
+	$same = $norm( $back ) === $norm( $atts );
 	$check( "round trip  $label", $same, $same ? '' : 'residue: ' . wp_json_encode( FW_Elementor_Option_Bridge::residue( up_rt_ksort( $atts ), up_rt_ksort( $back ) ) ) );
 
 	// Every exposed option the atts carry must reach the panel as a control value (its
